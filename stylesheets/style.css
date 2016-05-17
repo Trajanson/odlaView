@@ -116,24 +116,28 @@ body {
 .learning-word-image-container {
   max-height: 52%;
   min-height: 57%;
-  background-color: orange;
+  background-color: #AFA99E;
   max-width: 39%;
   min-width: 32%;
   position: absolute;
   display: block;
   left: 2%;
   top: 15%;
+  overflow: hidden;
 }
 
-.learning-word-image {
-  max-height: 100%;
-  min-height: 100%;
-  min-width: 100%;
-  max-width: 100%;
+#learning-word-image {
+  /* max-height: 100%; */
+  /* min-height: 100%; */
+  /* min-width: 100%; */
+  /* max-width: 100%; */
+  position: relative;
+  z-index: 1;
 }
 
-
-
+#learning-word-image-back{
+  z-index: 1;
+}
 
 
 
@@ -161,4 +165,18 @@ body {
   left: 56%;
 }
 
-.learning-word-back {font-size: 4vw;top: 21%;left: 30%;}
+.learning-word-back {
+  font-size: 4vw;
+  top: 21%;
+  left: 30%;
+}
+
+#answer-form {left: 50%;top: 68%;position: absolute;}
+
+.answer-box {}
+
+#next-flashcard-button{
+  font-size: 1.5vw;
+  top: 0%;
+  position: relative;
+}

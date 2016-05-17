@@ -70,24 +70,31 @@
 
 
 
-  <div id="flashcard" class="flashcard-container flip-container" onclick="document.querySelector('#flashcard').classList.toggle('clicked');">
+  <div id="flashcard" class="flashcard-container flip-container">
     <div class="flipper">
 
       <div class="front-of-flashcard">
-        <div class="learning-word-text flashcard-text"><span class="learning-word">ice cream</span></div>
+        <div class="learning-word-text flashcard-text"><span id="known-word"></span></div>
         <div class="learning-word-image-container" >
-          <!-- <img class="learning-word-image" src="assets/ice_cream.jpg" /> -->
+          <img class="learning-word-image" />
         </div>
+        <form id="answer-form">
+          <input class="answer-box" type="text" name="learneranswer" />
+        </form>
       </div>
 
       <div class="back-of-flashcard">
         <img class="flashcard-audio-image" src="assets/audioPurple.png" />
         <audio id="pronunciation"></audio>
 
-        <div class="answer-word-text flashcard-text">glass</div>
+        <button id="next-flashcard-button" type="button" class="btn btn-info">Next</button>
+
         <div class="learning-word-image-container" >
-          <!-- <img class="learning-word-image" src="assets/ice_cream.jpg" /> -->
+          <img class="learning-word-image" id="learning-word-image-back" />
         </div>
+
+        <div class="answer-word-text flashcard-text"><span id="learning-word"></span></div>
+        <div class="learning-word-image-container" ></div>
 
 
       </div>
