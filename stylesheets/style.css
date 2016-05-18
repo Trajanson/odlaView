@@ -156,7 +156,7 @@ body {
 
 .learning-word-text {
   top: 13%;
-  right: 12%;
+  left: 50%;
 }
 
 .answer-word-text {
@@ -173,7 +173,7 @@ body {
 
 #answer-form {left: 50%;top: 68%;position: absolute;}
 
-.answer-box {}
+#flashcard-answer-box {}
 
 #next-flashcard-button{
   font-size: 1.5vw;

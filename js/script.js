@@ -1,35 +1,34 @@
-// TODO - append audio to individual flashcard, not file
+// Priority
+// TODO - Put External-Looking Stubbings In Place
+// TODO - Add Testing
+// TODO - Add Diferencing Statement (difference between learner answer and correct answer)
+
+
 // TODO - remove temporary stubbings
-// TODO - remove flashcare text from html
+// TODO - remove flashcard text from html
 // TODO - forvo attribution is required
 // TODO - add google virtual keyboard for foreign languages
 
 // Temporary Stubbing
-const CURRENT_KNOWN_LANGUAGE    = 'en';
-const CURRENT_LEARNING_LANGUAGE = 'sv';
 
-const CURRENT_DECK = {
-  "flashcards": [
-    {"en": "ice cream", "sv": "glass"},
-    {"en": "candy", "sv": "godis"},
-    {"en": "cake", "sv": "kaka"},
-    {"en": "chocolate", "sv": "choklad"},
-    {"en": "vanilla", "sv": "vanilj"}
-  ]
+// STUB TODO: put in real request
+function getInfoForCurrentStudySessionFromBackend() {
+  return {
+    "flashcards": [
+      {"en": "ice cream", "sv": "glass"},
+      {"en": "candy", "sv": "godis"},
+      {"en": "cake", "sv": "kaka"},
+      {"en": "chocolate", "sv": "choklad"},
+      {"en": "vanilla", "sv": "vanilj"}
+    ],
+    "currentlyKnownLanguage": "en",
+    "currentlyLearningLanguage": "sv"
+  }
 }
 
-var current_flashcard_location_in_current_deck = 0;
-function iterateNextFlashcard () {
-  current_flashcard_location_in_current_deck += 1;
-}
 
-function CURRENT_KNOWN_WORD () {
-  return CURRENT_DECK["flashcards"][current_flashcard_location_in_current_deck][CURRENT_KNOWN_LANGUAGE];
-}
 
-function CURRENT_LEARNING_WORD () {
-  return CURRENT_DECK["flashcards"][current_flashcard_location_in_current_deck][CURRENT_LEARNING_LANGUAGE];
-}
+
 
 
 
@@ -60,9 +59,10 @@ const KNOWN_WORD_TEXT = $("#known-word");
 const LEARNING_WORD_TEXT = $("#learning-word");
 
 const SOUND_IMAGE_IN_FLASHCARD = $('.flashcard-container .flashcard-audio-image');
-const pronunciationAudio = $("#pronunciation");
+const PRONUNCIATION_AUDIO = $("#pronunciation");
 
 const USER_ANSWER_FORM = $('#answer-form');
+const USER_ANSWER_BOX  = $('#flashcard-answer-box');
 
 const IMAGE_OF_WORD_CONTAINER = $('.learning-word-image-container');
 const IMAGE_OF_WORD = $('.learning-word-image');
@@ -77,55 +77,204 @@ const MICROSOFT_IMAGE_SEARCH_API_URL = "https://bingapis.azure-api.net/api/v5/im
 //////////////////////////////////////////////////
 
 
-// learning language
 
-// known word
-// learning word
-var vocabPracticeSession = {
-  current_known_word: null,
-  current_learning_word: null,
 
-  wordList: {
-      "en": "ice cream",
-      "sv": "glass"
-  },
-  test: ""
+
+
+function vocabPracticeSession() {
+  this.associatedView = null;
+
+  this.currentKnownLanguage    = null;
+  this.currentLearningLanguage = null;
+
+  this.flashcardDeckForSession = null;
+  this.current_flashcard_location_in_current_deck = null;
+
+  this.currentKnownWord = function() {
+    return this.flashcardDeckForSession.flashcardsInDeck[this.current_flashcard_location_in_current_deck]["currentlyKnownWord"];
+  }.bind(this);
+  this.currentLearningWord = function() {
+    return this.flashcardDeckForSession.flashcardsInDeck[this.current_flashcard_location_in_current_deck]["currentlyLearningWord"];
+  }.bind(this);
+
+  this.beginStudy = function() {
+    this.digestDataFromServer();
+    this.selectNextCard();
+    this.associatedView.renderNewCard();
+  }
+
+  this.digestDataFromServer = function() {
+    var currentStudySessionData = getInfoForCurrentStudySessionFromBackend();
+
+    this.currentKnownLanguage = this.extractKnownLanguageForCurrentStudySession(currentStudySessionData);
+    this.currentLearningLanguage = this.extractLearningLanguageForCurrentStudySession(currentStudySessionData);
+
+
+    this.flashcardDeckForSession = new flashcardDeckForSession();
+    this.flashcardDeckForSession.setVocabPracticeSession(this);
+    this.flashcardDeckForSession.digestWordListFromServer(this.extractCardsForCurrentStudySession(currentStudySessionData));
+  }
+
+  this.extractCardsForCurrentStudySession = function (currentStudySessionData) {
+    return currentStudySessionData.flashcards;
+  }
+
+  this.extractKnownLanguageForCurrentStudySession = function (currentStudySessionData) {
+    return currentStudySessionData.currentlyKnownLanguage;
+  }
+  this.extractLearningLanguageForCurrentStudySession = function (currentStudySessionData) {
+    return currentStudySessionData.currentlyLearningLanguage;
+  }
+
+  this.selectNextCard = function() {
+    // Develop a Better Algorithm
+    var numberOfFlashcards = this.flashcardDeckForSession.deckSize();
+    var newIndex = Math.floor((Math.random() * numberOfFlashcards));
+    this.current_flashcard_location_in_current_deck = newIndex;
+  }
 }
 
 
 
-function setNewCard() {
-  KNOWN_WORD_TEXT.text(CURRENT_KNOWN_WORD());
-  LEARNING_WORD_TEXT.text(CURRENT_LEARNING_WORD());
-
-  setVocabImage(CURRENT_KNOWN_WORD());
 
 
-  USER_ANSWER_FORM.submit(function(event) {
-    USER_ANSWER_FORM.off();
-    checkWord(event, CURRENT_LEARNING_WORD());
-  })
+function flashcardDeckForSession() {
+  this.flashcardsInDeck = [];
+  this.deckSize = function() {
+    return this.flashcardsInDeck.length;
+  }
 
-  NEXT_FLASHCARD_BUTTON.click(function() {
-    NEXT_FLASHCARD_BUTTON.off();
-    iterateNextFlashcard();
-    FLASHCARD.toggleClass('clicked');
-    setNewCard();
-  });
+  this.currentFlashcard = null;
+
+  this.vocabPracticeSession = null;
+  this.setVocabPracticeSession = function(vocabPracticeSession) {
+    this.vocabPracticeSession = vocabPracticeSession;
+  }
+
+  this.digestWordListFromServer = function(dataFromServer) {
+    var currentKnownLanguage    = this.vocabPracticeSession.currentKnownLanguage,
+        currentLearningLanguage = this.vocabPracticeSession.currentLearningLanguage;
+    dataFromServer.forEach(function(wordDataItem, index) {
+      var knownWord = wordDataItem[currentKnownLanguage],
+          learningWord = wordDataItem[currentLearningLanguage],
+          newFlashcard = new flashcard();
+
+      newFlashcard.currentlyKnownWord = knownWord;
+      newFlashcard.currentlyLearningWord = learningWord;
+      this.flashcardsInDeck.push(newFlashcard);
+    }.bind(this));
+  }
 }
 
 
 
-function checkWord(event, word) {
+
+
+function flashcard() {
+  this.currentlyKnownWord    = null;
+  this.currentlyLearningWord = null;
+}
+
+
+
+
+
+
+
+
+
+
+function flashcardView() {
+  this.associatedController = null;
+
+  this.initialize = function(vocabPracticeSession) {
+    this.associatedController = vocabPracticeSession;
+    fitsoundImageInFlashcard();
+    sizeFlashcardContainer();
+  }
+
+  this.renderNewCard = function() {
+    var currentKnownWord  = this.associatedController.currentKnownWord(),
+        currentLearningWord = this.associatedController.currentLearningWord()
+        currentLearningLanguage = this.associatedController.currentLearningLanguage;
+
+    this.setViewForNewCard(currentKnownWord, currentLearningWord);
+    this.setAnswerSubmitFormForNewCard(currentLearningWord, currentLearningLanguage);
+    this.setNextCardButtonOnBackOfCard();
+  }
+
+
+  this.setViewForNewCard = function(currentKnownWord, currentLearningWord) {
+    KNOWN_WORD_TEXT.text(currentKnownWord);
+    LEARNING_WORD_TEXT.text(currentLearningWord);
+    setVocabImage(currentKnownWord);
+  }
+
+  this.setAnswerSubmitFormForNewCard = function (currentLearningWord, currentLearningLanguage) {
+    USER_ANSWER_FORM.submit(function(event) {
+      USER_ANSWER_FORM.off();
+      USER_ANSWER_BOX.val("");
+      this.handleAnswerSubmissionFromView(event, currentLearningWord, currentLearningLanguage);
+    }.bind(this));
+  }
+
+  this.setNextCardButtonOnBackOfCard = function () {
+    NEXT_FLASHCARD_BUTTON.click(function() {
+      NEXT_FLASHCARD_BUTTON.off();
+      this.associatedController.selectNextCard();
+      FLASHCARD.toggleClass('clicked');
+      this.renderNewCard();
+    }.bind(this));
+
+    this.handleAnswerSubmissionFromView = function (event, currentLearningWord, currentLearningLanguage) {
+      event.preventDefault();
+      FLASHCARD.toggleClass('clicked');
+
+      setPronunctiationAudio(currentLearningWord, currentLearningLanguage);
+      SOUND_IMAGE_IN_FLASHCARD.click(function() {
+        $("#pronunciation").get(0).play();
+      });
+    }
+
+
+}
+
+
+
+
+
+
+
+
+// TODO
+// Can Implement Now
+function checkAnswer() {
+
+}
+
+// TODO
+// Needs Stub
+function reportIndividualResultToDatabase () {
+}
+
+
+
+
+
+
+}
+
+
+
+function handleAnswerSubmissionFromView(event, currentLearningWord, currentLearningLanguage) {
   event.preventDefault();
   FLASHCARD.toggleClass('clicked');
 
-  setPronunctiationAudio(word);
+  setPronunctiationAudio(currentLearningWord, currentLearningLanguage);
   SOUND_IMAGE_IN_FLASHCARD.click(function() {
     SOUND_IMAGE_IN_FLASHCARD.off();
     $("#pronunciation").get(0).play();
   });
-
 }
 
 
@@ -156,12 +305,13 @@ function checkWord(event, word) {
 //////////////////////////////////////////////////
 $(document).ready( function() {
 
-  setNewCard();
+  var currentStudySession = new vocabPracticeSession();
+  var renderedFlashcardView = new flashcardView();
 
-  // Sizing
-  fitsoundImageInFlashcard();
-  sizeFlashcardContainer();
+  renderedFlashcardView.initialize(currentStudySession);
 
+  currentStudySession.associatedView = renderedFlashcardView;
+  currentStudySession.beginStudy();
 });
 
 //////////////////////////////////////////////////
@@ -232,8 +382,8 @@ function sizeImageWithinContainer(imageElement) {
       container         = image.parent(),
       containerHeight   = container.height(),
       containerWidth    = container.width(),
-      imageStartHeight  = image.height(),
-      imageStartWidth   = image.width(),
+      imageStartHeight  = image.prop('naturalHeight'),
+      imageStartWidth   = image.prop('naturalWidth'),
       isTooTallNotTooFat,
       shrinkMultiplier,
       imagePixelsFromLeft,
@@ -294,9 +444,9 @@ function sizeImageWithinContainer(imageElement) {
 
 // Get Forvo Audio  //////////////////////////////
 //////////////////////////////////////////////////
-function setPronunctiationAudio (wordToPronounce) {
+function setPronunctiationAudio (wordToPronounce, currentLearningLanguage) {
   var word = wordToPronounce;
-  var url = constructForvoAudioRequest(word, CURRENT_LEARNING_LANGUAGE);
+  var url = constructForvoAudioRequest(word, currentLearningLanguage);
   ajaxCallToForvo(word, url);
 };
 
@@ -318,7 +468,7 @@ function ajaxCallToForvo(word, url) {
 function ajaxCallToForvo_Success(json) {
   var mp3 = json.items[0].pathmp3;
   var ogg = json.items[0].pathogg;
-  $("#pronunciation").attr({
+  PRONUNCIATION_AUDIO.attr({
       'src': mp3,
       'volume': 1,
       'autoplay': 'autoplay'
@@ -381,14 +531,15 @@ function ajaxCallToMicrosoft(url) {
     },
     success: function(data) {
       ajaxCallToMicrosoft_sucess(data);
-      IMAGE_OF_WORD.on('load', function() {
-        IMAGE_OF_WORD.off();
-        ajaxCallToMicrosoft_then();
-      });
     },
     failure: function(err) {
       ajaxCallToMicrosoft_failure(err);
     }
+  }).then(function() {
+    IMAGE_OF_WORD.on('load', function() {
+      IMAGE_OF_WORD.off();
+      ajaxCallToMicrosoft_then();
+    });
   });
 }
 
