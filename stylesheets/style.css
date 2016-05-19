@@ -45,6 +45,18 @@ body {
     overflow: hidden;
     margin: 0px 0px 0px 0px;
     padding: 0px 0px 0px 0px;
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 
@@ -71,6 +83,21 @@ body {
 	height: 100%;
   border: black;
   border-style: solid;
+
+  -webkit-align-self: center;
+      -ms-flex-item-align: center;
+          align-self: center;
+  margin: 0 1rem;
+  -webkit-transition: all .5s ease;
+  transition: all .5s ease;
+  color: #41403E;
+  font-size: 2rem;
+  letter-spacing: 1px;
+  outline: none;
+  box-shadow: 20px 38px 34px -26px rgba(0, 0, 0, 0.2);
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  border: solid 7px #41403E;
+
 }
 
 /* flip speed goes here */
@@ -179,4 +206,21 @@ body {
   font-size: 1.5vw;
   top: 0%;
   position: relative;
+}
+
+/* From http://codepen.io/tmrDevelops/pen/VeRvKX */
+.front-of-flashcard, .back-of-flashcard {
+  -webkit-align-self: center;
+  -ms-flex-item-align: center;
+  align-self: center;
+  margin: 0 0.25rem;
+  -webkit-transition: all .5s ease;
+  transition: all .5s ease;
+  color: #41403E;
+  font-size: 2rem;
+  letter-spacing: 1px;
+  outline: none;
+  box-shadow: 20px 38px 34px -26px rgba(0, 0, 0, 0.2);
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  border: solid 7px #41403E;
 }

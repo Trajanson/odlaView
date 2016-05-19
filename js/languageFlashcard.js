@@ -88,7 +88,7 @@ function vocabPracticeSession() {
   this.currentLearningLanguage = null;
 
   this.flashcardDeckForSession = null;
-  this.current_flashcard_location_in_current_deck = null;
+  // this.current_flashcard_location_in_current_deck = null;
 
   this.currentKnownWord = function() {
     return this.flashcardDeckForSession.flashcardsInDeck[this.current_flashcard_location_in_current_deck]["currentlyKnownWord"];
@@ -207,6 +207,7 @@ function flashcardView() {
   this.setViewForNewCard = function(currentKnownWord, currentLearningWord) {
     KNOWN_WORD_TEXT.text(currentKnownWord);
     LEARNING_WORD_TEXT.text(currentLearningWord);
+    USER_ANSWER_BOX.focus();
     setVocabImage(currentKnownWord);
   }
 
@@ -221,6 +222,9 @@ function flashcardView() {
   this.setNextCardButtonOnBackOfCard = function () {
     NEXT_FLASHCARD_BUTTON.click(function() {
       NEXT_FLASHCARD_BUTTON.off();
+      LEARNING_WORD_TEXT.css({
+        "visibility": "hidden"
+      });
       this.associatedController.selectNextCard();
       FLASHCARD.toggleClass('clicked');
       this.renderNewCard();
@@ -228,6 +232,10 @@ function flashcardView() {
 
     this.handleAnswerSubmissionFromView = function (event, currentLearningWord, currentLearningLanguage) {
       event.preventDefault();
+      LEARNING_WORD_TEXT.css({
+        "visibility": "visible"
+      });
+      NEXT_FLASHCARD_BUTTON.focus();
       FLASHCARD.toggleClass('clicked');
 
       setPronunctiationAudio(currentLearningWord, currentLearningLanguage);

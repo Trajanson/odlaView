@@ -10,7 +10,9 @@ Citations:
 1. Audio Image
      URL: https://openclipart.org/detail/74875/audio
      Author: nomade
-
+2. CSS for Flashcard
+    URL: http://codepen.io/tmrDevelops/pen/VeRvKX
+    Author: Tiffany Rayside
 
 
 
