@@ -223,4 +223,17 @@ body {
   box-shadow: 20px 38px 34px -26px rgba(0, 0, 0, 0.2);
   border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
   border: solid 7px #41403E;
+  overflow: hidden;
+}
+
+#first-score-signal-image{height: 15%;width: 10%;position: absolute;bottom: 3.5%;left: 23.5%;}
+
+
+#completed-deck-message{
+  position: absolute;
+  top: 30%;left: 32%;
+  min-height: 30%;
+  min-width: 38%;
+  background-color: orange;
+  display: none;
 }

@@ -1,19 +1,17 @@
 // Priority
-// TODO - Put External-Looking Stubbings In Place
 // TODO - Add Testing
 // TODO - Add Diferencing Statement (difference between learner answer and correct answer)
 
+// TODO - Move API Calls to Flashcard Initialization (1 time, not every time shown)
 
-// TODO - remove temporary stubbings
-// TODO - remove flashcard text from html
+// TODO - remove temporary stubbings with AJAX calls
 // TODO - forvo attribution is required
 // TODO - add google virtual keyboard for foreign languages
 
 // Temporary Stubbing
 
 // STUB TODO: put in real request
-function getInfoForCurrentStudySessionFromBackend() {
-  return {
+const MOCK_DATA_FROM_BACKEND = {
     "flashcards": [
       {"en": "ice cream", "sv": "glass"},
       {"en": "candy", "sv": "godis"},
@@ -24,7 +22,6 @@ function getInfoForCurrentStudySessionFromBackend() {
     "currentlyKnownLanguage": "en",
     "currentlyLearningLanguage": "sv"
   }
-}
 
 
 
@@ -69,12 +66,29 @@ const IMAGE_OF_WORD = $('.learning-word-image');
 
 const NEXT_FLASHCARD_BUTTON = $('#next-flashcard-button');
 
+const FIRST_SCORE_IMAGE = $('#first-score-signal-image');
+
+const COMLETED_DECK_MESSAGE = $('#completed-deck-message');
+
 
 // APIs
 const FORVO_API_URL = "http://apifree.forvo.com/key/78dfafefc36008fe27a6a3a73c340f81/format/json/action/standard-pronunciation/word/";
 const MICROSOFT_IMAGE_SEARCH_API_URL = "https://bingapis.azure-api.net/api/v5/images/search?q=";
+const AZURE_IMAGE_SEARCH_API_URL = "https://api.datamarket.azure.com/Bing/Search/v1/Image?Query=";
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
+
+
+
+function serverTerminal() {
+  this.getInfoForCurrentStudySessionFromBackend = function() {
+    return MOCK_DATA_FROM_BACKEND;
+  };
+};
+
+
+
+
 
 
 
@@ -83,28 +97,29 @@ const MICROSOFT_IMAGE_SEARCH_API_URL = "https://bingapis.azure-api.net/api/v5/im
 
 function vocabPracticeSession() {
   this.associatedView = null;
+  this.serverTerminal = null;
 
   this.currentKnownLanguage    = null;
   this.currentLearningLanguage = null;
 
   this.flashcardDeckForSession = null;
-  // this.current_flashcard_location_in_current_deck = null;
 
   this.currentKnownWord = function() {
-    return this.flashcardDeckForSession.flashcardsInDeck[this.current_flashcard_location_in_current_deck]["currentlyKnownWord"];
+    return this.flashcardDeckForSession.currentFlashcard.currentlyKnownWord;
   }.bind(this);
   this.currentLearningWord = function() {
-    return this.flashcardDeckForSession.flashcardsInDeck[this.current_flashcard_location_in_current_deck]["currentlyLearningWord"];
+    return this.flashcardDeckForSession.currentFlashcard.currentlyLearningWord;
   }.bind(this);
 
   this.beginStudy = function() {
-    this.digestDataFromServer();
-    this.selectNextCard();
+    this.digestInitialDataFromServer();
+    this.flashcardDeckForSession.selectNextCard();
     this.associatedView.renderNewCard();
   }
 
-  this.digestDataFromServer = function() {
-    var currentStudySessionData = getInfoForCurrentStudySessionFromBackend();
+  this.digestInitialDataFromServer = function() {
+    this.serverTerminal     = new serverTerminal();
+    var currentStudySessionData = this.serverTerminal.getInfoForCurrentStudySessionFromBackend();
 
     this.currentKnownLanguage = this.extractKnownLanguageForCurrentStudySession(currentStudySessionData);
     this.currentLearningLanguage = this.extractLearningLanguageForCurrentStudySession(currentStudySessionData);
@@ -126,11 +141,25 @@ function vocabPracticeSession() {
     return currentStudySessionData.currentlyLearningLanguage;
   }
 
-  this.selectNextCard = function() {
-    // Develop a Better Algorithm
-    var numberOfFlashcards = this.flashcardDeckForSession.deckSize();
-    var newIndex = Math.floor((Math.random() * numberOfFlashcards));
-    this.current_flashcard_location_in_current_deck = newIndex;
+
+  this.hasEmptyDeck = function() {
+    return (0 === this.flashcardDeckForSession.remainingDeckSize());
+  }
+
+  this.judgeLearnerAnswer = function(learnerAnswer) {
+    console.log(this.flashcardDeckForSession.flashcardsInDeck);
+    var currentLearningWord = this.currentLearningWord().trim();
+    console.log(currentLearningWord);
+    // correct answer
+    if (learnerAnswer === currentLearningWord) {
+      FIRST_SCORE_IMAGE.show();
+    } else {
+      // wrong answer
+
+      this.flashcardDeckForSession.currentFlashcard.timeDue += Math.random() * ((this.flashcardDeckForSession.remainingDeckSize() + 1) * 1000);
+
+      this.flashcardDeckForSession.flashcardsInDeck.push(this.flashcardDeckForSession.currentFlashcard);
+    }
   }
 }
 
@@ -139,12 +168,27 @@ function vocabPracticeSession() {
 
 
 function flashcardDeckForSession() {
-  this.flashcardsInDeck = [];
-  this.deckSize = function() {
+  this.currentFlashcard = null;
+
+  this.flashcardsInDeck   = [];
+  this.flashcardsReviewed = [];
+
+  this.remainingDeckSize = function() {
     return this.flashcardsInDeck.length;
   }
 
-  this.currentFlashcard = null;
+  this.selectNextCard = function() {
+    this.orderDeckByTimeDue();
+    var currentFlashcard = this.flashcardsInDeck.shift();
+    this.currentFlashcard = currentFlashcard;
+  }
+
+  this.orderDeckByTimeDue = function() {
+    this.flashcardsInDeck = this.flashcardsInDeck.sort(function(firstCard, secondCard){
+      return (firstCard.timeDue - secondCard.timeDue);
+    });
+  }
+
 
   this.vocabPracticeSession = null;
   this.setVocabPracticeSession = function(vocabPracticeSession) {
@@ -155,12 +199,14 @@ function flashcardDeckForSession() {
     var currentKnownLanguage    = this.vocabPracticeSession.currentKnownLanguage,
         currentLearningLanguage = this.vocabPracticeSession.currentLearningLanguage;
     dataFromServer.forEach(function(wordDataItem, index) {
-      var knownWord = wordDataItem[currentKnownLanguage],
+      var knownWord    = wordDataItem[currentKnownLanguage],
           learningWord = wordDataItem[currentLearningLanguage],
+          timeDue      = Date.now() + Math.floor(Math.random() * 1000);
           newFlashcard = new flashcard();
 
-      newFlashcard.currentlyKnownWord = knownWord;
+      newFlashcard.currentlyKnownWord    = knownWord;
       newFlashcard.currentlyLearningWord = learningWord;
+      newFlashcard.timeDue               = timeDue;
       this.flashcardsInDeck.push(newFlashcard);
     }.bind(this));
   }
@@ -173,6 +219,10 @@ function flashcardDeckForSession() {
 function flashcard() {
   this.currentlyKnownWord    = null;
   this.currentlyLearningWord = null;
+
+  this.previouslyCorrect     = false;
+
+  this.timeDue               = null;
 }
 
 
@@ -198,9 +248,15 @@ function flashcardView() {
         currentLearningWord = this.associatedController.currentLearningWord()
         currentLearningLanguage = this.associatedController.currentLearningLanguage;
 
-    this.setViewForNewCard(currentKnownWord, currentLearningWord);
-    this.setAnswerSubmitFormForNewCard(currentLearningWord, currentLearningLanguage);
-    this.setNextCardButtonOnBackOfCard();
+    if (this.associatedController.hasEmptyDeck()) {
+      console.log("All done!");
+      COMLETED_DECK_MESSAGE.show();
+    } else {
+      FIRST_SCORE_IMAGE.hide();
+      this.setViewForNewCard(currentKnownWord, currentLearningWord);
+      this.setAnswerSubmitFormForNewCard(currentLearningWord, currentLearningLanguage);
+      this.setNextCardButtonOnBackOfCard();
+    }
   }
 
 
@@ -208,11 +264,17 @@ function flashcardView() {
     KNOWN_WORD_TEXT.text(currentKnownWord);
     LEARNING_WORD_TEXT.text(currentLearningWord);
     USER_ANSWER_BOX.focus();
-    setVocabImage(currentKnownWord);
+    setVocabImageWithAzure(currentKnownWord);
+
+    FIRST_SCORE_IMAGE.hide();
   }
 
   this.setAnswerSubmitFormForNewCard = function (currentLearningWord, currentLearningLanguage) {
     USER_ANSWER_FORM.submit(function(event) {
+      var userAnswer = USER_ANSWER_BOX.val().trim();
+
+      this.associatedController.judgeLearnerAnswer(userAnswer);
+
       USER_ANSWER_FORM.off();
       USER_ANSWER_BOX.val("");
       this.handleAnswerSubmissionFromView(event, currentLearningWord, currentLearningLanguage);
@@ -225,7 +287,7 @@ function flashcardView() {
       LEARNING_WORD_TEXT.css({
         "visibility": "hidden"
       });
-      this.associatedController.selectNextCard();
+      this.associatedController.flashcardDeckForSession.selectNextCard();
       FLASHCARD.toggleClass('clicked');
       this.renderNewCard();
     }.bind(this));
@@ -243,33 +305,7 @@ function flashcardView() {
         $("#pronunciation").get(0).play();
       });
     }
-
-
-}
-
-
-
-
-
-
-
-
-// TODO
-// Can Implement Now
-function checkAnswer() {
-
-}
-
-// TODO
-// Needs Stub
-function reportIndividualResultToDatabase () {
-}
-
-
-
-
-
-
+  }
 }
 
 
@@ -459,6 +495,8 @@ function setPronunctiationAudio (wordToPronounce, currentLearningLanguage) {
 };
 
 function ajaxCallToForvo(word, url) {
+  console.log(url);
+  console.log(word);
   $.ajax({
       url: url,
       jsonpCallback: "pronounce",
@@ -573,6 +611,95 @@ function constructMicrosoftImageRequest(wordToLearn) {
   var url = MICROSOFT_IMAGE_SEARCH_API_URL;
   url += word;
   url += "&count=1";
+  // fill in the next line to change the market to local for language of interest
+  // url += "&mkt=___________________________________________________________";
+
+  return url;
+}
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Get Microsoft Image ////////////////////////////
+//////////////////////////////////////////////////
+function setVocabImageWithAzure(word) {
+  var word = word;
+  var url  = constructMicrosoftImageRequestWithAzure(word);
+  ajaxCallToMicrosoftWithAzure(url);
+}
+
+function ajaxCallToMicrosoftWithAzure(url) {
+  $.ajax({
+    method: 'post',
+    //url: "https://api.datamarket.azure.com/Bing/Search/v1/Image?Query=%27apple%20jacks%27",
+     url: url,
+    //Set headers to authorize search with Bing
+    headers: {
+      'Authorization': 'Basic Om5xM1VMUWRBZThndkkyNjJKNG15T3I2TnplRWpkbWxweDJ3Y1lHVVl6NlU='
+    },
+    success: function(data) {
+      ajaxCallToMicrosoftWithAzure_sucess(data);
+    },
+    failure: function(err) {
+      ajaxCallToMicrosoftWithAzure_failure(err);
+    }
+  }).then(function() {
+    IMAGE_OF_WORD.on('load', function() {
+      IMAGE_OF_WORD.off();
+      ajaxCallToMicrosoftWithAzure_then();
+    });
+  });
+}
+
+function ajaxCallToMicrosoftWithAzure_sucess(data) {
+
+  var source = data.getElementsByTagName("entry")[0].getElementsByTagName("MediaUrl")[0].innerHTML;
+  IMAGE_OF_WORD.attr({
+    'src': source
+  });
+}
+
+function ajaxCallToMicrosoftWithAzure_failure(err) {
+  console.error(err);
+}
+
+function ajaxCallToMicrosoftWithAzure_then() {
+  sizeImageWithinContainer(IMAGE_OF_WORD);
+
+}
+
+
+function constructMicrosoftImageRequestWithAzure(wordToLearn) {
+  var word = encodeURI("'" + wordToLearn + "''");
+  var url = AZURE_IMAGE_SEARCH_API_URL;
+  url += word;
+  //url += "&$top=1";
   // fill in the next line to change the market to local for language of interest
   // url += "&mkt=___________________________________________________________";
 
